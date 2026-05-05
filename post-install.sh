@@ -43,7 +43,7 @@ add_pacman_limine_hook() {
     [[ -d "/boot/EFI/BOOT" ]] && path="/boot/EFI/BOOT" || path="/boot/EFI/limine"
     if [[ -f "/etc/pacman.d/hooks/99-limine.hook" ]]; then
         printf "[WARN] Pacman limine hook already exists\n"
-        read -p "[PROMPT] Overwrite hook (y/n): " hook_opt
+        read -p "[PROMPT] Overwrite hook? (y/n): " hook_opt
         if [[ "$hook_opt" != [yY] ]]; then
             return 0
         fi
@@ -63,41 +63,47 @@ EOF
 }
 
 add_swap() {
-    local GB_DENOM=$((1024 * 1024))
-    local mem_size_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-    local mem_size_gb=$(($mem_size_kb / $GB_DENOM))
-    local total_disk_gb=$(lsblk -lo NAME,SIZE | awk '/root/{print $2}')
-    if [[ "$mem_size_gb" -ge "$total_disk_gb" ]]; then
-        mem_size_kb=$(($mem_size_kb / 2))
-        mem_size_gb=$(($mem_size_kb / $GB_DENOM))
+    local mem_total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+    local disk_total_kb=$(($(lsblk -bno NAME,SIZE | head -n1 ) / 1024))
+
+    if [[ "$mem_total_kb" -ge "$disk_total_kb" ]]; then
+        mem_total_kb=$(($mem_total_kb / 2))
     fi
+
+    local swap_size_gb=$((mem_total_kb / 1024 / 1024))
+
+    [[ "$swap_size_gb" -le 0 ]] && swap_size_gb=1
+
     if sudo btrfs subvolume list / | grep -i "swap"; then
         printf "[WARN] Swap subvolume exists\n"
-        read -p "[PROMPT] Do you want to re-create swap volume? (y/n): " swap_opt
-        if [[ "$swap_opt" == [yY] ]]; then
-            sudo btrfs subvolume delete /swap
-            sudo btrfs subvolume create /swap
-        fi
+        return 0
     fi
     sudo btrfs subvolume create /swap
     if cat /proc/swaps | grep -i "swapfile"; then
         printf "[WARN] Swapfile exists\n"
-        read -p "[PROMPT] Do you want to re-create swap file? (y/n): " swapf_opt
-        if [[ "$swapf_opt" == [yY] ]]; then
-            sudo rm -rf /swap
-        fi
+    else
+        sudo btrfs filesystem mkswapfile --size "$swap_size_gb"g --uuid clear /swap/swapfile
+        sudo swapon -p 0 /swap/swapfile
     fi
-    sudo btrfs filesystem mkswapfile --size "$mem_size_gb"g --uuid clear /swap/swapfile
-    sudo swapon -p 0 /swap/swapfile
     if ! cat /etc/fstab | grep -i "swapfile"; then
         sudo echo "/swap/swapfile none swap defaults,pri=0 0 0" >> /etc/fstab
+        sudo mkinitcpio -P
     fi
-    sudo mkinitcpio -P
 }
 
 configure_snapper() {
+    root_snapper_conf="/etc/snapper/configs/root"
+    home_snapper_conf="/etc/snapper/configs/home"
+    if [[ -f "$root_snapper_conf" ]]; then
+        printf "[WARN] Pre-existing snapper config file found at '%s'. Aborting configuration creation\n" "$root_snapper_conf"
+        return 0
+    fi
+    if [[ -f "$home_snapper_conf" ]]; then
+        printf "[WARN] Pre-existing snapper config file found at '%s'. Aborting configuration creation\n" "$home_snapper_conf"
+        return 0
+    fi
     sudo pacman -S --needed --noconfirm snapper snap-pac jdk-openjdk
-    yay -S --needed --noconfirm --noredownload --nocleanmenu --nodiffmenu --noeditmenu --noupgrademenu limine-snapper-sync limine-mkinitcpio-hook
+    yay -S --needed --noconfirm --answerdiff None --answerclean None limine-snapper-sync limine-mkinitcpio-hook
     sudo snapper -c root create-config /
     sudo snapper -c home create-config /home
     sudo sed -i 's/^TIMELINE_CREATE="yes"/TIMELINE_CREATE="no"/' /etc/snapper/configs/{root,home}
