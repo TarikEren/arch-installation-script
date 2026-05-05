@@ -36,7 +36,7 @@ enable_trim() {
 }
 
 add_pacman_limine_hook() {
-    mkdir -p /etc/pacman.d/hooks
+    sudo mkdir -p /etc/pacman.d/hooks
     path=""
     [[ -d "/boot/EFI/BOOT" ]] && path="/boot/EFI/BOOT" || path="/boot/EFI/limine"
     if [[ -f "/etc/pacman.d/hooks/99-limine.hook" ]]; then
@@ -46,7 +46,7 @@ add_pacman_limine_hook() {
             return 0
         fi
     fi
-    cat > /etc/pacman.d/hooks/99-limine.hook <<EOF
+    sudo tee /etc/pacman.d/hooks/99-limine.hook <<EOF
 [Trigger]
 Operation = Install
 Operation = Upgrade
