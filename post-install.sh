@@ -84,7 +84,7 @@ add_swap() {
         sudo swapon -p 0 /swap/swapfile
     fi
     if ! cat /etc/fstab | grep -i "swapfile"; then
-        sudo echo "/swap/swapfile none swap defaults,pri=0 0 0" >> /etc/fstab
+        echo "/swap/swapfile none swap defaults,pri=0 0 0" | sudo tee -a /etc/fstab > /dev/null
         sudo mkinitcpio -P
     fi
 }
@@ -108,7 +108,7 @@ configure_snapper() {
     sudo sed -i 's/^NUMBER_LIMIT="50"/NUMBER_LIMIT="5"/' /etc/snapper/configs/{root,home}
     sudo sed -i 's/^NUMBER_LIMIT_IMPORTANT="10"/NUMBER_LIMIT_IMPORTANT="5"/' /etc/snapper/configs/{root,home}
     sudo cp /etc/limine-entry-tool.conf /etc/default/limine
-    sudo echo "ROOT_SNAPSHOTS_PATH=/@snapshots" >> /etc/default/limine
+    echo "ROOT_SNAPSHOTS_PATH=/@snapshots" | sudo tee -a /etc/default/limine > /dev/null
 
     if [[ -d "/boot/EFI/BOOT" ]]; then
         sudo rm "/boot/EFI/BOOT/limine.conf"
