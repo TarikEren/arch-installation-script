@@ -156,3 +156,6 @@ configure_snapper
 
 printf "[INFO] Adding automatic firmware updates\n"
 add_automatic_firmware_updates
+
+install_complete=1
+printf "[INFO] Installation complete\n"
