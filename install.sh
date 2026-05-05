@@ -1,4 +1,3 @@
-# TODO: Add auto confirm on pacman package installs
 install_complete=0
 keymap="us"
 disk=""
