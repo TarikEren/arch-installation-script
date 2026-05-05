@@ -1,3 +1,4 @@
+# TODO: Add auto confirm on pacman package installs
 install_complete=0
 keymap="us"
 disk=""
@@ -244,12 +245,12 @@ configure_limine() {
     printf "[INFO] Setting up limine bootloader\n"
     if [[ $(dmidecode -s baseboard-manufacturer | grep -i micro-star) ]]; then
         printf "[INFO] MSI motherboard detected, using fallback path\n"
-        conf_path="/mnt/boot/EFI/limine/limine.conf"
+        conf_path="/boot/EFI/limine/limine.conf"
         efi_bin_path="/boot/EFI/BOOT"
         efi_str_bin_path="\\EFI\\BOOT\\BOOTX64.EFI"
     else
         printf "[INFO] Using default limine configuration\n"
-        conf_path="/mnt/boot/EFI/BOOT/limine.conf"
+        conf_path="/boot/EFI/BOOT/limine.conf"
         efi_bin_path="/boot/EFI/limine/"
         efi_str_bin_path="\\EFI\\limine\\BOOTX64.EFI"
     fi
@@ -259,7 +260,7 @@ configure_limine() {
         mkdir -p $efi_bin_path
         cp /usr/share/limine/BOOTX64.EFI $efi_bin_path
         efibootmgr --create --disk $disk --part 1 --label "Arch Linux Limine Bootloader" --loader '$efi_str_bin_path' --unicode
-EOF
+EOF &> /dev/null
 
     printf "[INFO] Generating Limine configuration\n"
     cat > "$conf_path" <<EOF
@@ -337,10 +338,10 @@ handle_partitions
 get_cpu_and_gpu
 
 printf "[INFO] Refreshing package database with keyring and installing packages...\n"
-pacman -Syy archlinux-keyring
+pacman -Syy --noconfirm archlinux-keyring
 pacman-key --init
 pacman-key --populate archlinux
-pacstrap -K /mnt "${packages[@]}" &>/dev/null
+pacstrap -K /mnt --noconfirm "${packages[@]}"
 
 printf "[INFO] Generating fstab...\n"
 genfstab -U /mnt >> /mnt/etc/fstab &> /dev/null
