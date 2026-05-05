@@ -263,6 +263,7 @@ configure_limine() {
 EOF &> /dev/null
 
     printf "[INFO] Generating Limine configuration\n"
+    touch "$conf_path"
     cat > "$conf_path" <<EOF
 timeout: 3
 
