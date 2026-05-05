@@ -240,7 +240,7 @@ configure_limine() {
     local efi_bin_path=""
     local efi_str_bin_path=""
     printf "[INFO] Setting up limine bootloader\n"
-    if [[ $(dmidecode -s baseboard-manufacturer | grep -i micro-star) ]]; then
+    if dmidecode -s baseboard-manufacturer | grep -qi micro-star; then
         printf "[INFO] MSI motherboard detected, using fallback path\n"
         conf_path="/boot/EFI/BOOT/limine.conf"
         efi_bin_path="/boot/EFI/BOOT/"
@@ -256,7 +256,6 @@ configure_limine() {
     arch-chroot /mnt /bin/bash <<EOF
         mkdir -p $efi_bin_path
         cp /usr/share/limine/BOOTX64.EFI $efi_bin_path
-        touch $conf_path
         efibootmgr --create --disk $disk --part 1 --label "Arch Linux Limine Bootloader" --loader '$efi_str_bin_path' --unicode &> /dev/null
 EOF
 
