@@ -149,6 +149,7 @@ get_disk() {
     mapfile -t disks < <(
         lsblk -dn -o NAME,SIZE,TYPE | awk '$3 == "disk"'
     )
+
     if (( ${#disks[@]} == 0 )); then
         printf "[ERROR] No disks found\n"
         exit 1
@@ -156,28 +157,29 @@ get_disk() {
 
     printf "Available disks:\n"
     for i in "${!disks[@]}"; do
-        read -r name size model type <<< "${disks[$i]}"
-        printf '%2d- /dev/%-8s %-10s %s\n' "$((i + 1))" "$name" "$size" "$model"
+        read -r name size type <<< "${disks[$i]}"
+        printf '%2d- /dev/%-8s %-10s %s\n' "$((i + 1))" "$name" "$size" "$type"
     done
 
     while true; do
         read -r -p "[PROMPT] Select disk number: " disk
         if [[ "$disk" =~ ^[0-9]+$ ]] && (( disk >= 1 && disk <= ${#disks[@]} )); then
-            read -r -p "[PROMPT] The selected disk will be completely wiped. All the partition data and files will be lost. The script will exit if you don't consent to the disk wipe.\nDo you want to continue (y/n): " cont_opt && [[ $cont_opt == [yY] ]] || { printf "[Info] Exiting...\n" && exit 1 }
-            selected_disk="/dev/${disks[$((disk - 1))]%% *}"
-            break
+            read -r -p "[PROMPT] The selected disk will be completely wiped. All partition data and files will be lost.\nDo you want to continue (y/n): " cont_opt
+            if [[ $cont_opt == [yY] ]]; then
+                selected_disk="/dev/${disks[$((disk - 1))]%% *}"
+                break
+            else
+                printf "[INFO] Exiting...\n"
+                exit 1
+            fi
         else
             printf "[ERROR] Invalid selection.\n"
         fi
     done
 
-    read -r name size type <<< "${disks[$((disk - 1))]}"
-    selected_disk="/dev/$name"
-
-    printf "[INFO] Selected disk: $selected_disk\n"
+    printf "[INFO] Selected disk: %s\n" "$selected_disk"
     disk="$selected_disk"
 }
-
 handle_partitions() {
     printf "[INFO] Clearing disk and creating partitions\n"
     sgdisk -Zo "$disk" &> /dev/null
