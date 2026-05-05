@@ -326,8 +326,8 @@ get_disk
 # Present config to the user
 printf "########## SYSTEM CONFIGURATION ##########\n"
 printf "Username: %s\nPassword: %s\nKeyboard Layout: %s\nDisk Name: %s\n" "$username" "$password" "$keymap" "$disk"
-read -r -p "[PROMPT] Would you like to proceed (Y/n): " confirm
-if ! [[ $confirm == [yY] || $confirm == [yY][eE][sS] || -z $confirm ]]; then
+read -r -p "[PROMPT] Would you like to proceed (y/n): " confirm
+if ! [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
     printf "[INFO] Exiting...\n"
     exit 1
 fi
