@@ -204,9 +204,9 @@ handle_partitions() {
     printf "[INFO] Mounting disk and creating subvolumes\n"
     mount "$root_disk" /mnt
     btrfs subvolume create /mnt/@
-    btrfs subvolume /mnt/@home
-    btrfs subvolume /mnt/@var_log
-    btrfs subvolume /mnt/@var_cache
+    btrfs subvolume create /mnt/@home
+    btrfs subvolume create /mnt/@var_log
+    btrfs subvolume create /mnt/@var_cache
     umount /mnt
 
     printf "[INFO] Mounting partitions\n"
