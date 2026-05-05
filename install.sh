@@ -259,8 +259,8 @@ configure_limine() {
     arch-chroot /mnt /bin/bash <<EOF
         mkdir -p $efi_bin_path
         cp /usr/share/limine/BOOTX64.EFI $efi_bin_path
-        efibootmgr --create --disk $disk --part 1 --label "Arch Linux Limine Bootloader" --loader '$efi_str_bin_path' --unicode
-EOF &> /dev/null
+        efibootmgr --create --disk $disk --part 1 --label "Arch Linux Limine Bootloader" --loader '$efi_str_bin_path' --unicode &> /dev/null
+EOF
 
     printf "[INFO] Generating Limine configuration\n"
     touch "$conf_path"
