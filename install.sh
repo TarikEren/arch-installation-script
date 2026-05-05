@@ -7,7 +7,7 @@ password=""
 microcode=""
 gpu_driver=""
 root_disk=""
-packages=(base linux linux-firmware base-devel btrfs-progs efibootmgr limine networkmanager iwd dhcpcd cryptsetup util-linux git bash-completion avahi acpi acpi_call acpid alsa-utils nvim pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber sof-firmware firewalld bluez bluez-utils cups openssh reflector man sudo rsync udisks2)
+packages=(base linux linux-firmware base-devel btrfs-progs efibootmgr limine networkmanager iwd dhcpcd cryptsetup util-linux git bash-completion avahi acpi acpi_call acpid alsa-utils nvim pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber sof-firmware firewalld bluez bluez-utils cups openssh reflector man sudo rsync udisks2 ttf-jetbrains-mono-nerd)
 
 # Fail quick and loud
 set -euo pipefail
@@ -324,7 +324,11 @@ get_disk
 # Present config to the user
 printf "########## SYSTEM CONFIGURATION ##########\n"
 printf "Username: %s\nPassword: %s\nKeyboard Layout: %s\nDisk Name: %s\n" "$username" "$password" "$keymap" "$disk"
-read -p "[PROMPT] Would you like to proceed (Y/n): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] || -z $confirm ]] || printf "[Info] Exiting...\n" && exit 1
+read -r -p "[PROMPT] Would you like to proceed (Y/n): " confirm
+if ! [[ $confirm == [yY] || $confirm == [yY][eE][sS] || -z $confirm ]]; then
+    printf "[INFO] Exiting...\n"
+    exit 1
+fi
 
 # Handle partitions
 handle_partitions
