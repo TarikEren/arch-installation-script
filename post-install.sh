@@ -118,6 +118,14 @@ configure_snapper() {
         sudo limine-install
     fi
 
+    if [[ -f "/boot/limine.conf" ]]; then
+        if ! grep -q "//Snapshots" "$limine_conf"; then
+            printf "[INFO] Injecting Snapshots marker into %s\n" "$limine_conf"
+            # Inserts //Snapshots after the cmdline in the //linux entry
+            sudo sed -i '/\/\/linux/I,/cmdline/ s/cmdline.*/&\n  \/\/Snapshots/' "$limine_conf"
+        fi
+    fi
+
     sudo limine-snapper-sync
     sudo systemctl enable --now limine-snapper-sync.service
 }
