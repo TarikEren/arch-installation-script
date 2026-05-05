@@ -189,12 +189,12 @@ handle_partitions() {
     local ESP="/dev/disk/by-partlabel/ESP"
     local LINUX="/dev/disk/by-partlabel/Linux"
 
-    printf "[INFO] Setting EFI partition\n"
-    mkfs.fat -F 32 "$ESP" &>/dev/null
-
     printf "[INFO] Notifying system about partitions\n"
     udevadm settle
     partprobe "$disk"
+
+    printf "[INFO] Setting EFI partition\n"
+    mkfs.fat -F 32 "$ESP" &>/dev/null
 
     printf "[INFO] Setting LUKS encryption\n"
     echo -n "$password" | cryptsetup luksFormat "$LINUX" -d - &>/dev/null
@@ -327,7 +327,7 @@ get_disk
 printf "########## SYSTEM CONFIGURATION ##########\n"
 printf "Username: %s\nPassword: %s\nKeyboard Layout: %s\nDisk Name: %s\n" "$username" "$password" "$keymap" "$disk"
 read -r -p "[PROMPT] Would you like to proceed (y/n): " confirm
-if ! [[ $confirm == [yY] || $confirm == [yY][eE][sS] ]]; then
+if ! [[ $confirm == [yY] ]]; then
     printf "[INFO] Exiting...\n"
     exit 1
 fi
