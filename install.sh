@@ -260,7 +260,7 @@ configure_limine() {
 EOF
 
     printf "[INFO] Generating Limine configuration\n"
-    cat > "$conf_path" <<EOF
+    cat > /mnt/"$conf_path" <<EOF
 timeout: 3
 
 /Arch Linux
