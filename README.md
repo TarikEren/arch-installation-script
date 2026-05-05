@@ -1,4 +1,4 @@
-# arch-installation-script
+# arch-installation-script  (WIP)
 
 Installs Arch Linux with LUKS encrypted BTRFS and Limine Bootloader.
 - Handles non-UEFI compliant motherboard issues with Limine.
