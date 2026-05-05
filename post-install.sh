@@ -13,11 +13,11 @@ cleanup() {
 trap cleanup EXIT
 
 setup_yay() {
-    if [[ -d "~/yay" ]]; then
+    cd ~
+    if [[ -d "./yay" ]]; then
         return 0
     else
-        cd ~
-        sudo pacman -S --noconfirm git
+        sudo pacman -S --noconfirm --needed git
         git clone https://aur.archlinux.org/yay.git
         cd yay && makepkg -si --noconfirm
         cd ~
@@ -41,6 +41,13 @@ add_pacman_limine_hook() {
     mkdir -p /etc/pacman.d/hooks
     path=""
     [[ -d "/boot/EFI/BOOT" ]] && path="/boot/EFI/BOOT" || path="/boot/EFI/limine"
+    if [[ -f "/etc/pacman.d/hooks/99-limine.hook" ]]; then
+        printf "[WARN] Pacman limine hook already exists\n"
+        read -p "[PROMPT] Overwrite hook (y/n): " hook_opt
+        if [[ "$hook_opt" != [yY] ]]; then
+            return 0
+        fi
+    fi
     cat > /etc/pacman.d/hooks/99-limine.hook <<EOF
 [Trigger]
 Operation = Install
@@ -59,16 +66,36 @@ add_swap() {
     local GB_DENOM=$((1024 * 1024))
     local mem_size_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
     local mem_size_gb=$(($mem_size_kb / $GB_DENOM))
+    local total_disk_gb=$(lsblk -lo NAME,SIZE | awk '/root/{print $2}')
+    if [[ "$mem_size_gb" -ge "$total_disk_gb" ]]; then
+        mem_size_kb=$(($mem_size_kb / 2))
+        mem_size_gb=$(($mem_size_kb / $GB_DENOM))
+    fi
+    if sudo btrfs subvolume list / | grep -i "swap"; then
+        printf "[WARN] Swap subvolume exists\n"
+        read -p "[PROMPT] Do you want to re-create swap volume? (y/n): " swap_opt
+        if [[ "$swap_opt" == [yY] ]]; then
+            sudo btrfs subvolume delete /swap
+            sudo btrfs subvolume create /swap
+        fi
     sudo btrfs subvolume create /swap
+    if cat /proc/swaps | grep -i "swapfile"; then
+        printf "[WARN] Swapfile exists\n"
+        read -p "[PROMPT] Do you want to re-create swap file? (y/n): " swapf_opt
+        if [[ "$swapf_opt" == [yY] ]]; then
+            sudo rm -rf /swap
+        fi
     sudo btrfs filesystem mkswapfile --size "$mem_size_gb"g --uuid clear /swap/swapfile
     sudo swapon -p 0 /swap/swapfile
-    sudo echo "/swap/swapfile none swap defaults,pri=0 0 0" >> /etc/fstab
+    if ! cat /etc/fstab | grep -i "swapfile"; then
+        sudo echo "/swap/swapfile none swap defaults,pri=0 0 0" >> /etc/fstab
+    fi
     sudo mkinitcpio -P
 }
 
 configure_snapper() {
-    sudo pacman -S --noconfirm snapper snap-pac
-    yay -S limine-snapper-sync limine-mkinitcpio-hook
+    sudo pacman -S --needed --noconfirm snapper snap-pac jdk-openjdk
+    yay -S --needed --noconfirm --noredownload --nocleanmenu --nodiffmenu --noeditmenu --noupgrademenu limine-snapper-sync limine-mkinitcpio-hook
     sudo snapper -c root create-config /
     sudo snapper -c home create-config /home
     sudo sed -i 's/^TIMELINE_CREATE="yes"/TIMELINE_CREATE="no"/' /etc/snapper/configs/{root,home}
@@ -77,10 +104,11 @@ configure_snapper() {
     sudo cp /etc/limine-entry-tool.conf /etc/default/limine
     sudo echo "ROOT_SNAPSHOTS_PATH=/@snapshots" >> /etc/default/limine
 
-    [[ -d "/boot/EFI/BOOT" ]] && sudo rm "/boot/EFI/BOOT/limine.conf" || sudo rm "/boot/EFI/limine/limine.conf"
     if [[ -d "/boot/EFI/BOOT" ]]; then
+        sudo rm "/boot/EFI/BOOT/limine.conf"
         sudo limine-install --skip-uefi --fallback
     else
+        sudo rm "/boot/EFI/limine/limine.conf"
         sudo limine-install
     fi
 
