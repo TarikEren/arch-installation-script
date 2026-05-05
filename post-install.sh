@@ -6,8 +6,6 @@ cleanup() {
         return
     fi
     printf "[WARN] Script interrupted or failed — cleaning up...\n"
-    umount -R /mnt 2>/dev/null || true
-    cryptsetup close root 2>/dev/null || true
 }
 
 trap cleanup EXIT
@@ -64,7 +62,7 @@ EOF
 
 add_swap() {
     local mem_total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-    local disk_total_kb=$(($(lsblk -bno NAME,SIZE | head -n1 ) / 1024))
+    local disk_total_kb=$(($(lsblk -bno SIZE | head -n1 ) / 1024))
 
     if [[ "$mem_total_kb" -ge "$disk_total_kb" ]]; then
         mem_total_kb=$(($mem_total_kb / 2))
