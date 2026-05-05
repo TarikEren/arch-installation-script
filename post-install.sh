@@ -78,6 +78,7 @@ add_swap() {
             sudo btrfs subvolume delete /swap
             sudo btrfs subvolume create /swap
         fi
+    fi
     sudo btrfs subvolume create /swap
     if cat /proc/swaps | grep -i "swapfile"; then
         printf "[WARN] Swapfile exists\n"
@@ -85,6 +86,7 @@ add_swap() {
         if [[ "$swapf_opt" == [yY] ]]; then
             sudo rm -rf /swap
         fi
+    fi
     sudo btrfs filesystem mkswapfile --size "$mem_size_gb"g --uuid clear /swap/swapfile
     sudo swapon -p 0 /swap/swapfile
     if ! cat /etc/fstab | grep -i "swapfile"; then
