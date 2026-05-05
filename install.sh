@@ -203,7 +203,10 @@ handle_partitions() {
 
     printf "[INFO] Mounting disk and creating subvolumes\n"
     mount "$root_disk" /mnt
-    btrfs subvolume create /mnt/@ /mnt/@home /mnt/@var_log /mnt/@var_cache
+    btrfs subvolume create /mnt/@
+    btrfs subvolume /mnt/@home
+    btrfs subvolume /mnt/@var_log
+    btrfs subvolume /mnt/@var_cache
     umount /mnt
 
     printf "[INFO] Mounting partitions\n"
@@ -341,7 +344,7 @@ pacman-key --populate archlinux
 pacstrap -K /mnt --noconfirm "${packages[@]}"
 
 printf "[INFO] Generating fstab...\n"
-genfstab -U /mnt >> /mnt/etc/fstab &> /dev/null
+genfstab -U /mnt >> /mnt/etc/fstab
 
 printf "[INFO] Generating mkinitcpio.conf...\n"
 cat > /mnt/etc/mkinitcpio.conf <<EOF
