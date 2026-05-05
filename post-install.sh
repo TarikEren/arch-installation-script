@@ -13,11 +13,15 @@ cleanup() {
 trap cleanup EXIT
 
 setup_yay() {
-    cd ~
-    sudo pacman -S --noconfirm git
-    git clone https://aur.archlinux.org/yay.git
-    cd yay && makepkg -si --noconfirm
-    cd ~
+    if [[ -d "~/yay" ]]; then
+        return 0
+    else
+        cd ~
+        sudo pacman -S --noconfirm git
+        git clone https://aur.archlinux.org/yay.git
+        cd yay && makepkg -si --noconfirm
+        cd ~
+    fi
 }
 
 enable_trim() {
