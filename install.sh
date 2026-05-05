@@ -323,7 +323,7 @@ get_disk
 # Present config to the user
 printf "########## SYSTEM CONFIGURATION ##########\n"
 printf "Username: %s\nPassword: %s\nKeyboard Layout: %s\nDisk Name: %s\n" "$username" "$password" "$keymap" "$disk"
-read -p "[PROMPT] Would you like to proceed (Y/n): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] || -z $confirm ]] || { printf "[Info] Exiting...\n" && exit 1 }
+read -p "[PROMPT] Would you like to proceed (Y/n): " confirm && [[ $confirm == [yY] || $confirm == [yY][eE][sS] || -z $confirm ]] || printf "[Info] Exiting...\n" && exit 1
 
 # Handle partitions
 handle_partitions
