@@ -164,7 +164,8 @@ get_disk() {
     while true; do
         read -r -p "[PROMPT] Select disk number: " disk
         if [[ "$disk" =~ ^[0-9]+$ ]] && (( disk >= 1 && disk <= ${#disks[@]} )); then
-            read -r -p "[PROMPT] The selected disk will be completely wiped. All partition data and files will be lost.\nDo you want to continue (y/n): " cont_opt
+            printf "[PROMPT] The selected disk will be completely wiped. All partition data and files will be lost.\n"
+            read -r -p "Do you want to continue (y/n): " cont_opt
             if [[ $cont_opt == [yY] ]]; then
                 selected_disk="/dev/${disks[$((disk - 1))]%% *}"
                 break
