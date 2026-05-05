@@ -1,6 +1,6 @@
 # Fail quick and loud
 set -euo pipefail
-
+install_complete=0
 cleanup() {
     if [[ $install_complete -eq 1 ]]; then
         return
