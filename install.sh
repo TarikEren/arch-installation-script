@@ -242,16 +242,14 @@ configure_limine() {
     printf "[INFO] Setting up limine bootloader\n"
     if [[ $(dmidecode -s baseboard-manufacturer | grep -i micro-star) ]]; then
         printf "[INFO] MSI motherboard detected, using fallback path\n"
-        conf_path="/boot/EFI/limine/limine.conf"
+        conf_path="/boot/EFI/BOOT/limine.conf"
         efi_bin_path="/boot/EFI/BOOT"
         efi_str_bin_path="\\EFI\\BOOT\\BOOTX64.EFI"
-        mkdir -p /mnt/boot/EFI/BOOT
     else
         printf "[INFO] Using default limine configuration\n"
-        conf_path="/boot/EFI/BOOT/limine.conf"
+        conf_path="/boot/EFI/limine/limine.conf"
         efi_bin_path="/boot/EFI/limine/"
         efi_str_bin_path="\\EFI\\limine\\BOOTX64.EFI"
-        mkdir -p /mnt/boot/EFI/limine
     fi
 
     printf "[INFO] Creating paths and boot entry\n"
