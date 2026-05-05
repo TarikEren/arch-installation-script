@@ -15,7 +15,6 @@ setup_yay() {
     if [[ -d "./yay" ]]; then
         return 0
     else
-        sudo pacman -S --noconfirm --needed git
         git clone https://aur.archlinux.org/yay.git
         cd yay && makepkg -si --noconfirm
         cd ~
