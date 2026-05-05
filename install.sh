@@ -133,17 +133,14 @@ get_usr_info() {
     while [ -z "$host_name" ]; do
         read -p "[PROMPT] Enter host name: " host_name
     done
-    printf "[INFO] Host name: %s\n" "$host_name"
 
     while [ -z "$username" ]; do
         read -p "[PROMPT] Enter root user name: " username
     done
-    printf "[INFO] Root user: %s\n" "$username"
 
     while [ -z "$password" ]; do
         read -p "[PROMPT] Enter password (Root / Encryption / User): " password
     done
-    printf "[INFO] Master password set\n"
 }
 
 get_disk() {
