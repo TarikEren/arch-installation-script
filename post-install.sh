@@ -100,14 +100,32 @@ configure_snapper() {
         printf "[WARN] Pre-existing snapper config file found at '%s'. Aborting configuration creation\n" "$home_snapper_conf"
         return 0
     fi
+
     sudo pacman -S --needed --noconfirm snapper snap-pac jdk-openjdk
     yay -S --needed --noconfirm --answerdiff None --answerclean None limine-snapper-sync limine-mkinitcpio-hook
+
     sudo snapper -c root create-config /
     sudo snapper -c home create-config /home
+    sudo cp /etc/limine-entry-tool.conf /etc/default/limine
+
+    local btrfs_dev=$(findmnt -n -o SOURCE /)
+    if ! grep -q "/.snapshots" /etc/fstab; then
+        echo "$btrfs_dev /.snapshots btrfs subvol=@snapshots,compress=zstd,noatime 0 0" | sudo tee -a /etc/fstab > /dev/null
+    fi
+
+    sudo mount "$btrfs_dev" /mnt -o subvolid=5
+    if [[ ! -d "/mnt/@snapshots" ]]; then
+        sudo btrfs subvolume create /mnt/@snapshots
+    fi
+    sudo umount /mnt
+
+    sudo mount /.snapshots
+    sudo chmod 750 /.snapshots
+
+
     sudo sed -i 's/^TIMELINE_CREATE="yes"/TIMELINE_CREATE="no"/' /etc/snapper/configs/{root,home}
     sudo sed -i 's/^NUMBER_LIMIT="50"/NUMBER_LIMIT="5"/' /etc/snapper/configs/{root,home}
     sudo sed -i 's/^NUMBER_LIMIT_IMPORTANT="10"/NUMBER_LIMIT_IMPORTANT="5"/' /etc/snapper/configs/{root,home}
-    sudo cp /etc/limine-entry-tool.conf /etc/default/limine
     echo "ROOT_SNAPSHOTS_PATH=/@snapshots" | sudo tee -a /etc/default/limine > /dev/null
 
     if [[ -d "/boot/EFI/BOOT" ]]; then
