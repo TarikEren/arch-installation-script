@@ -29,10 +29,14 @@ chmod +x install.sh
 ```
 and follow the prompts.
 
-### Post Installation Script
+### Post Installation Script (WIP)
 Run:
 ```bash
 chmod +x post_install.sh
 ./post_install.sh
 ```
 and follow the prompts.
+
+#### TODOs:
+- [ ] Fix Snapper Limine snapshot count mismatches
+- [ ] Run further testing
