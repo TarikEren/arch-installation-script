@@ -352,12 +352,12 @@ FILES=()
 HOOKS=(base udev autodetect microcode modconf kms keyboard keymap block encrypt filesystems resume fsck)
 EOF
 
+configure_system_details
+
 printf "[INFO] Generating system images...\n"
 arch-chroot /mnt /bin/bash <<EOF
     mkinitcpio -P &> /dev/null
 EOF
-
-configure_system_details
 
 configure_limine
 
