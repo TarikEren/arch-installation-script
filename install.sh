@@ -13,8 +13,7 @@ packages=(base linux linux-firmware base-devel btrfs-progs efibootmgr limine net
 set -euo pipefail
 
 # Root check
-if [ "`id -u`" -ne 0 ]
-then
+if [ "$(id -u)" -ne 0 ]; then
     printf "[ERROR] Run this script as root\n"
     exit -1
 fi
@@ -35,56 +34,56 @@ connect_to_wifi() {
         printf "[INFO] Scanning for Wi-Fi networks...\n"
 
         mapfile -t networks < <(
-          nmcli -t -f SSID,SIGNAL,SECURITY dev wifi list --rescan yes \
-            | awk -F: 'NF >= 3 && $1 != "" { print }' \
-            | sort -u
+            nmcli -t -f SSID,SIGNAL,SECURITY dev wifi list --rescan yes |
+                awk -F: 'NF >= 3 && $1 != "" { print }' |
+                sort -u
         )
 
-    if (( ${#networks[@]} == 0 )); then
-        printf "[ERROR] No Wi-Fi networks found.\n"
-        return 1
-    fi
+        if ((${#networks[@]} == 0)); then
+            printf "[ERROR] No Wi-Fi networks found.\n"
+            return 1
+        fi
 
         printf "[INFO] Available networks:\n"
-    for i in "${!networks[@]}"; do
-        IFS=: read -r ssid signal security <<< "${networks[$i]}"
-        printf '%2d) %-32s  signal=%-3s  security=%s\n' \
-        $((i + 1)) "$ssid" "$signal" "$security"
-    done
+        for i in "${!networks[@]}"; do
+            IFS=: read -r ssid signal security <<<"${networks[$i]}"
+            printf '%2d) %-32s  signal=%-3s  security=%s\n' \
+                $((i + 1)) "$ssid" "$signal" "$security"
+        done
 
-    read -r -p "Select network number: " choice
+        read -r -p "Select network number: " choice
 
-    if ! [[ "$choice" =~ ^[0-9]+$ ]] || (( choice < 1 || choice > ${#networks[@]} )); then
-        printf "[ERROR] Invalid selection.\n"
-        continue
-    fi
-
-    IFS=: read -r ssid signal security <<< "${networks[$((choice - 1))]}"
-
-    echo
-    read -r -s -p "[PROMPT] Password for '$ssid' (leave blank for open network): " wifi_password
-    echo
-
-    printf "[INFO] Connecting to '$ssid'...\n"
-    if [[ -n "$wifi_password" ]]; then
-        if nmcli dev wifi connect "$ssid" password "$wifi_password"; then
-            printf "[INFO] Connected to '$ssid'.\n"
-            return 0
+        if ! [[ "$choice" =~ ^[0-9]+$ ]] || ((choice < 1 || choice > ${#networks[@]})); then
+            printf "[ERROR] Invalid selection.\n"
+            continue
         fi
-    else
-        if nmcli dev wifi connect "$ssid"; then
-            printf "[INFO] Connected to '$ssid'.\n"
-            return 0
-        fi
-    fi
 
-    printf "[ERROR] Failed to connect to '$ssid'. Returning to network list...\n"
+        IFS=: read -r ssid signal security <<<"${networks[$((choice - 1))]}"
+
+        echo
+        read -r -s -p "[PROMPT] Password for '$ssid' (leave blank for open network): " wifi_password
+        echo
+
+        printf "[INFO] Connecting to '$ssid'...\n"
+        if [[ -n "$wifi_password" ]]; then
+            if nmcli dev wifi connect "$ssid" password "$wifi_password"; then
+                printf "[INFO] Connected to '$ssid'.\n"
+                return 0
+            fi
+        else
+            if nmcli dev wifi connect "$ssid"; then
+                printf "[INFO] Connected to '$ssid'.\n"
+                return 0
+            fi
+        fi
+
+        printf "[ERROR] Failed to connect to '$ssid'. Returning to network list...\n"
     done
 }
 
 handle_connection() {
     printf "[INFO] Checking internet connectivity...\n"
-    echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 > /dev/null 2>&1
+    echo -e "GET http://google.com HTTP/1.0\n\n" | nc google.com 80 >/dev/null 2>&1
     if [ $? -eq 0 ]; then
         printf "[INFO] Connected to internet\n"
     else
@@ -98,7 +97,7 @@ handle_connection() {
 get_keyboard_layout() {
     while true; do
         read -p "[PROMPT] Enter keyboard layout. (Leave empty for 'us'): " usr_key_layout
-        if localectl list-keymaps | grep -x "$usr_key_layout" > /dev/null; then
+        if localectl list-keymaps | grep -x "$usr_key_layout" >/dev/null; then
             printf "[INFO] Set '%s' as keyboard keymap\n" "$usr_key_layout"
             keymap=$usr_key_layout
             break
@@ -147,20 +146,20 @@ get_disk() {
         lsblk -dn -o NAME,SIZE,TYPE | awk '$3 == "disk"'
     )
 
-    if (( ${#disks[@]} == 0 )); then
+    if ((${#disks[@]} == 0)); then
         printf "[ERROR] No disks found\n"
         exit 1
     fi
 
     printf "Available disks:\n"
     for i in "${!disks[@]}"; do
-        read -r name size type <<< "${disks[$i]}"
+        read -r name size type <<<"${disks[$i]}"
         printf '%2d- /dev/%-8s %-10s %s\n' "$((i + 1))" "$name" "$size" "$type"
     done
 
     while true; do
         read -r -p "[PROMPT] Select disk number: " disk
-        if [[ "$disk" =~ ^[0-9]+$ ]] && (( disk >= 1 && disk <= ${#disks[@]} )); then
+        if [[ "$disk" =~ ^[0-9]+$ ]] && ((disk >= 1 && disk <= ${#disks[@]})); then
             printf "[PROMPT] The selected disk will be completely wiped. All partition data and files will be lost.\n"
             read -r -p "Do you want to continue (y/n): " cont_opt
             if [[ $cont_opt == [yY] ]]; then
@@ -180,7 +179,7 @@ get_disk() {
 }
 handle_partitions() {
     printf "[INFO] Clearing disk and creating partitions\n"
-    sgdisk -Zo "$disk" &> /dev/null
+    sgdisk -Zo "$disk" &>/dev/null
     parted --script "$disk" mklabel gpt mkpart ESP fat32 1MiB 2049MiB set 1 esp on mkpart Linux btrfs 2050MiB 100%
     local ESP="/dev/disk/by-partlabel/ESP"
     local LINUX="/dev/disk/by-partlabel/Linux"
@@ -194,7 +193,7 @@ handle_partitions() {
 
     printf "[INFO] Setting LUKS encryption\n"
     echo -n "$password" | cryptsetup luksFormat "$LINUX" -d - &>/dev/null
-    echo -n "$password" | cryptsetup open "$LINUX" root -d - 
+    echo -n "$password" | cryptsetup open "$LINUX" root -d -
     root_disk="/dev/mapper/root"
 
     printf "[INFO] Setting root BTRFS partition\n"
@@ -262,7 +261,7 @@ configure_limine() {
 EOF
 
     printf "[INFO] Generating Limine configuration\n"
-    cat > /mnt/"$conf_path" <<EOF
+    cat >/mnt/"$conf_path" <<EOF
 timeout: 3
 
 /Arch Linux
@@ -289,9 +288,9 @@ configure_system_details() {
         read -p "[PROMPT] Enter timezone (e.g. Europe/Istanbul): " timezone
     fi
     printf "[INFO] Setting local time and language...\n"
-    printf "%s\nen_US.UTF-8 UTF-8\n" "$locale" > /mnt/etc/locale.gen
-    echo LANG="en_US.UTF-8" > /mnt/etc/locale.conf
-    echo KEYMAP="$keymap" >> /mnt/etc/vconsole.conf
+    printf "%s\nen_US.UTF-8 UTF-8\n" "$locale" >/mnt/etc/locale.gen
+    echo LANG="en_US.UTF-8" >/mnt/etc/locale.conf
+    echo KEYMAP="$keymap" >>/mnt/etc/vconsole.conf
     arch-chroot /mnt /bin/bash <<EOF
         ln -sf /usr/share/zoneinfo/$timezone /etc/localtime &>/dev/null
         locale-gen &> /dev/null
@@ -300,8 +299,8 @@ EOF
 
     printf "[INFO] Setting up user...\n"
     echo "root:$password" | arch-chroot /mnt chpasswd
-    echo "%wheel ALL=(ALL:ALL) ALL" > /mnt/etc/sudoers.d/wheel
-    echo "$username" > /mnt/etc/hostname
+    echo "%wheel ALL=(ALL:ALL) ALL" >/mnt/etc/sudoers.d/wheel
+    echo "$host_name" >/mnt/etc/hostname
     arch-chroot /mnt useradd -m -G wheel -s /bin/bash "$username"
     echo "$username:$password" | arch-chroot /mnt chpasswd
 }
@@ -343,10 +342,10 @@ pacman-key --populate archlinux
 pacstrap -K /mnt --noconfirm "${packages[@]}"
 
 printf "[INFO] Generating fstab...\n"
-genfstab -U /mnt >> /mnt/etc/fstab
+genfstab -U /mnt >>/mnt/etc/fstab
 
 printf "[INFO] Generating mkinitcpio.conf...\n"
-cat > /mnt/etc/mkinitcpio.conf <<EOF
+cat >/mnt/etc/mkinitcpio.conf <<EOF
 MODULES=(btrfs)
 BINARIES=(/usr/bin/btrfs)
 FILES=()
