@@ -5,7 +5,7 @@ cleanup() {
     if [[ $install_complete -eq 1 ]]; then
         return
     fi
-    printf "[WARN] Script interrupted or failed — cleaning up...\n"
+    printf "[WARN] Script interrupted or failed\n"
 }
 
 trap cleanup EXIT
@@ -22,16 +22,12 @@ setup_yay() {
 }
 
 enable_trim() {
-    mapfile -t disks < <(lsblk -d -n -o NAME,TYPE | awk '$2 == "disk" {print "/dev/"$1}')
-    for disk in "${disks[@]}"; do
-        read -r disc_gran disc_max < <(lsblk -d -n -o DISC-GRAN,DISC-MAX "$disk")
-        if [[ "$disc_gran" != "0B" ]] && [[ "$disc_max" != "0B" ]]; then
-            printf "[INFO] %s supports TRIM (GRAN: %s, MAX: %s)\n" "$disk" "$disc_gran" "$disc_max"
-            systemctl enable --now fstrim.timer
-        else
-            printf "[INFO] %s does NOT support TRIM\n" "$disk"
-        fi
-    done
+    if systemctl list-unit-files | grep "fstrim.timer"; then
+        printf "[INFO] Enabling fstrim.timer\n"
+        systemctl enable --now fstrim.timer
+    else
+        printf "[INFO] No support for fstrim detected\n"
+    fi
 }
 
 add_pacman_limine_hook() {
@@ -61,7 +57,7 @@ EOF
 
 add_swap() {
     local mem_total_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-    local disk_total_kb=$(($(lsblk -bno SIZE | head -n1 ) / 1024))
+    local disk_total_kb=$(($(lsblk -bno SIZE | head -n1) / 1024))
 
     if [[ "$mem_total_kb" -ge "$disk_total_kb" ]]; then
         mem_total_kb=$(($mem_total_kb / 2))
@@ -83,14 +79,23 @@ add_swap() {
         sudo swapon -p 0 /swap/swapfile
     fi
     if ! cat /etc/fstab | grep -i "swapfile"; then
-        echo "/swap/swapfile none swap defaults,pri=0 0 0" | sudo tee -a /etc/fstab > /dev/null
+        echo "/swap/swapfile none swap defaults,pri=0 0 0" | sudo tee -a /etc/fstab >/dev/null
         sudo mkinitcpio -P
     fi
 }
 
 configure_snapper() {
-    root_snapper_conf="/etc/snapper/configs/root"
-    home_snapper_conf="/etc/snapper/configs/home"
+    local root_snapper_conf="/etc/snapper/configs/root"
+    local home_snapper_conf="/etc/snapper/configs/home"
+    local limine_conf=""
+    if [[ -f '/boot/EFI/BOOT/limine.conf' ]]; then
+        limine_conf="/boot/EFI/BOOT/limine.conf"
+    elif [[ -f '/boot/EFI/limine/limine.conf' ]]; then
+        limine_conf="/boot/EFI/limine/limine.conf"
+    else
+        printf "[WARN] No limine.conf found"
+        return 1
+    fi
     if [[ -f "$root_snapper_conf" ]]; then
         printf "[WARN] Pre-existing snapper config file found at '%s'. Aborting configuration creation\n" "$root_snapper_conf"
         return 0
@@ -108,8 +113,9 @@ configure_snapper() {
     sudo cp /etc/limine-entry-tool.conf /etc/default/limine
 
     local btrfs_dev=$(findmnt -n -o SOURCE /)
+    btrfs_dev="${btrfs_dev%%\[*}"
     if ! grep -q "/.snapshots" /etc/fstab; then
-        echo "$btrfs_dev /.snapshots btrfs subvol=@snapshots,compress=zstd,noatime 0 0" | sudo tee -a /etc/fstab > /dev/null
+        echo "$btrfs_dev /.snapshots btrfs subvol=@snapshots,compress=zstd,noatime 0 0" | sudo tee -a /etc/fstab >/dev/null
     fi
 
     sudo mount "$btrfs_dev" /mnt -o subvolid=5
@@ -121,17 +127,16 @@ configure_snapper() {
     sudo mount /.snapshots
     sudo chmod 750 /.snapshots
 
-
     sudo sed -i 's/^TIMELINE_CREATE="yes"/TIMELINE_CREATE="no"/' /etc/snapper/configs/{root,home}
     sudo sed -i 's/^NUMBER_LIMIT="50"/NUMBER_LIMIT="5"/' /etc/snapper/configs/{root,home}
     sudo sed -i 's/^NUMBER_LIMIT_IMPORTANT="10"/NUMBER_LIMIT_IMPORTANT="5"/' /etc/snapper/configs/{root,home}
-    echo "ROOT_SNAPSHOTS_PATH=/@snapshots" | sudo tee -a /etc/default/limine > /dev/null
+    echo "ROOT_SNAPSHOTS_PATH=/@snapshots" | sudo tee -a /etc/default/limine >/dev/null
 
     if [[ -d "/boot/EFI/BOOT" ]]; then
-        sudo rm "/boot/EFI/BOOT/limine.conf"
+        sudo rm -f "/boot/EFI/BOOT/limine.conf"
         sudo limine-install --skip-uefi --fallback
     else
-        sudo rm "/boot/EFI/limine/limine.conf"
+        sudo rm -f "/boot/EFI/limine/limine.conf"
         sudo limine-install
     fi
 
